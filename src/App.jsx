@@ -330,7 +330,7 @@ export default function App() {
           onDragLeave={() => setIsDraggingOver(false)}
           onDrop={handleDrop}
         >
-          {!pageRendered ? (
+          {!pageRendered && (
             <div className={`drop-zone ${isDraggingOver ? 'over' : ''}`} onClick={() => docInputRef.current?.click()}>
               <div className="drop-graphic">
                 <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
@@ -343,39 +343,39 @@ export default function App() {
               <p className="drop-title">Upload PDF Certificate</p>
               <p className="drop-hint">Click to browse or drag & drop your document here</p>
             </div>
-          ) : (
-            <div className="canvas-wrapper" style={{ width: canvasSize.w }}>
-              <div className="page-label">Page 1</div>
-              <div className="canvas-frame" style={{ width: canvasSize.w, height: canvasSize.h }}>
-                <canvas ref={canvasRef} />
-                <div
-                  ref={overlayRef}
-                  className={`overlay${selectedStamp ? ' placing' : ''}`}
-                  style={{ width: canvasSize.w, height: canvasSize.h }}
-                  onMouseDown={handleOverlayMouseDown}
-                >
-                  {placedStamps.map(inst => {
-                    const stamp = stamps.find(s => s.id === inst.stampId)
-                    if (!stamp) return null
-                    return (
-                      <div
-                        key={inst.id}
-                        className="placed"
-                        style={{ left: inst.x, top: inst.y, width: inst.w, height: inst.h }}
-                        onMouseDown={e => startMove(e, inst)}
-                      >
-                        <img src={stamp.dataUrl} alt="" draggable={false} />
-                        <button className="placed-remove" onMouseDown={e => removeInstance(e, inst.id)}>
-                          <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 1l6 6M7 1L1 7" stroke="white" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                        </button>
-                        <div className="placed-resize" onMouseDown={e => startResize(e, inst)} />
-                      </div>
-                    )
-                  })}
-                </div>
+          )}
+
+          <div className="canvas-wrapper" style={{ display: pageRendered ? 'flex' : 'none', width: canvasSize.w }}>
+            <div className="page-label">Page 1</div>
+            <div className="canvas-frame" style={{ width: canvasSize.w, height: canvasSize.h }}>
+              <canvas ref={canvasRef} />
+              <div
+                ref={overlayRef}
+                className={`overlay${selectedStamp ? ' placing' : ''}`}
+                style={{ width: canvasSize.w, height: canvasSize.h }}
+                onMouseDown={handleOverlayMouseDown}
+              >
+                {placedStamps.map(inst => {
+                  const stamp = stamps.find(s => s.id === inst.stampId)
+                  if (!stamp) return null
+                  return (
+                    <div
+                      key={inst.id}
+                      className="placed"
+                      style={{ left: inst.x, top: inst.y, width: inst.w, height: inst.h }}
+                      onMouseDown={e => startMove(e, inst)}
+                    >
+                      <img src={stamp.dataUrl} alt="" draggable={false} />
+                      <button className="placed-remove" onMouseDown={e => removeInstance(e, inst.id)}>
+                        <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 1l6 6M7 1L1 7" stroke="white" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                      </button>
+                      <div className="placed-resize" onMouseDown={e => startResize(e, inst)} />
+                    </div>
+                  )
+                })}
               </div>
             </div>
-          )}
+          </div>
         </div>
       </main>
     </div>
