@@ -73,6 +73,12 @@ function initCanvas(canvas) {
 }
 
 export default function App() {
+  // Theme
+  const [dark, setDark] = useState(false)
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
+  }, [dark])
+
   // Stamps & document state
   const [stamps, setStamps] = useState(() => {
     try { return JSON.parse(localStorage.getItem('sf_stamps') || '[]') } catch { return [] }
@@ -100,6 +106,7 @@ export default function App() {
   const [customFonts, setCustomFonts] = useState([])
   const [fontUrlInput, setFontUrlInput] = useState('')
   const [fontUrlError, setFontUrlError] = useState('')
+  const [showAddFont, setShowAddFont] = useState(false)
 
   // Refs
   const canvasRef = useRef(null)
@@ -441,10 +448,7 @@ export default function App() {
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-              <path d="M14 2L25.26 8.5V21.5L14 28L2.74 21.5V8.5L14 2Z" stroke="currentColor" strokeWidth="1.5" fill="none" />
-              <path d="M14 8L19.2 11V17L14 20L8.8 17V11L14 8Z" fill="currentColor" opacity="0.4" />
-            </svg>
+            <img src="/logo.svg" alt="StampFlow" width="32" height="38" />
           </div>
           <div>
             <h1 className="brand-name">StampFlow</h1>
@@ -548,13 +552,26 @@ export default function App() {
               </button>
             </div>
 
+            {/* Name input — above canvas so preview updates as you type */}
+            {createMode === 'type' && (
+              <input
+                className="sig-input"
+                type="text"
+                placeholder="Type your name..."
+                value={sigText}
+                onChange={e => setSigText(e.target.value)}
+                maxLength={40}
+                autoFocus
+              />
+            )}
+
             {/* Signature canvas */}
             <div className="sig-canvas-wrap">
               <canvas
                 ref={sigCanvasRef}
                 className={`sig-canvas${createMode === 'draw' ? ' drawable' : ''}`}
                 width={480}
-                height={200}
+                height={160}
                 onMouseDown={handleSigMouseDown}
                 onMouseMove={handleSigMouseMove}
                 onMouseUp={handleSigMouseUp}
@@ -584,34 +601,66 @@ export default function App() {
               </div>
             )}
 
-            {/* Type tools */}
+            {/* Font picker — type mode only */}
             {createMode === 'type' && (
-              <div className="type-tools">
-                <input
-                  className="sig-input"
-                  type="text"
-                  placeholder="Type your name..."
-                  value={sigText}
-                  onChange={e => setSigText(e.target.value)}
-                  maxLength={40}
-                  autoFocus
-                />
-                <div className="font-search-row">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <circle cx="5" cy="5" r="3.5" stroke="currentColor" strokeWidth="1.2"/>
-                    <path d="M8 8l2.5 2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-                  </svg>
-                  <input
-                    className="font-search"
-                    type="text"
-                    placeholder="Search fonts..."
-                    value={fontQuery}
-                    onChange={e => setFontQuery(e.target.value)}
-                  />
-                  {fontQuery && (
-                    <button className="font-search-clear" onClick={() => setFontQuery('')}>×</button>
-                  )}
+              <div className="font-picker">
+                {/* Search + toggle add-font button on one row */}
+                <div className="font-picker-top">
+                  <div className="font-search-row">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <circle cx="5" cy="5" r="3.5" stroke="currentColor" strokeWidth="1.2"/>
+                      <path d="M8 8l2.5 2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                    </svg>
+                    <input
+                      className="font-search"
+                      type="text"
+                      placeholder="Search fonts..."
+                      value={fontQuery}
+                      onChange={e => setFontQuery(e.target.value)}
+                    />
+                    {fontQuery && (
+                      <button className="font-search-clear" onClick={() => setFontQuery('')}>×</button>
+                    )}
+                  </div>
+                  <button
+                    className={`btn-toggle-add-font${showAddFont ? ' active' : ''}`}
+                    onClick={() => setShowAddFont(v => !v)}
+                    title="Add your own font"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                      <path d="M6.5 1v7M3.5 5l3-3 3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M1 10v1.5A.5.5 0 001.5 12h10a.5.5 0 00.5-.5V10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+                    </svg>
+                  </button>
                 </div>
+
+                {/* Collapsible add-font panel */}
+                {showAddFont && (
+                  <div className="add-font-panel">
+                    <button className="btn-upload-font" onClick={() => fontFileRef.current?.click()}>
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M6 1v7M3 5l3-3 3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M1 9v1.5A.5.5 0 001.5 11h9a.5.5 0 00.5-.5V9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+                      </svg>
+                      Upload font file (.ttf, .otf, .woff)
+                    </button>
+                    <input ref={fontFileRef} type="file" accept=".ttf,.otf,.woff,.woff2" onChange={handleFontFileUpload} hidden />
+                    <div className="font-url-row">
+                      <input
+                        className="font-url-input"
+                        type="text"
+                        placeholder="Google Fonts URL or name…"
+                        value={fontUrlInput}
+                        onChange={e => { setFontUrlInput(e.target.value); setFontUrlError('') }}
+                        onKeyDown={e => e.key === 'Enter' && handleAddFontUrl()}
+                      />
+                      <button className="btn-add-url" onClick={handleAddFontUrl}>Add</button>
+                    </div>
+                    {fontUrlError && <p className="font-url-error">{fontUrlError}</p>}
+                  </div>
+                )}
+
+                {/* Category chips — single scrollable row */}
                 <div className="cat-chips">
                   {CATEGORIES.map(cat => (
                     <button
@@ -623,6 +672,8 @@ export default function App() {
                     </button>
                   ))}
                 </div>
+
+                {/* Custom fonts */}
                 {customFonts.length > 0 && (
                   <div className="custom-font-list">
                     <span className="custom-font-label">Your fonts</span>
@@ -641,6 +692,7 @@ export default function App() {
                   </div>
                 )}
 
+                {/* Font list */}
                 <div className="font-list">
                   {FONTS
                     .filter(f =>
@@ -660,40 +712,9 @@ export default function App() {
                     ))
                   }
                 </div>
-
-                <div className="custom-font-add">
-                  <p className="custom-font-add-label">Use your own font</p>
-                  <button className="btn-upload-font" onClick={() => fontFileRef.current?.click()}>
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <path d="M6 1v7M3 5l3-3 3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M1 9v1.5A.5.5 0 001.5 11h9a.5.5 0 00.5-.5V9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                    </svg>
-                    Upload font file
-                  </button>
-                  <input ref={fontFileRef} type="file" accept=".ttf,.otf,.woff,.woff2" onChange={handleFontFileUpload} hidden />
-                  <div className="font-url-row">
-                    <input
-                      className="font-url-input"
-                      type="text"
-                      placeholder="Google Fonts URL or family name…"
-                      value={fontUrlInput}
-                      onChange={e => { setFontUrlInput(e.target.value); setFontUrlError('') }}
-                      onKeyDown={e => e.key === 'Enter' && handleAddFontUrl()}
-                    />
-                    <button className="btn-add-url" onClick={handleAddFontUrl}>Add</button>
-                  </div>
-                  {fontUrlError && <p className="font-url-error">{fontUrlError}</p>}
-                </div>
               </div>
             )}
 
-            <button
-              className="btn-save-sig"
-              onClick={saveSignature}
-              disabled={createMode === 'draw' ? !hasDrawn.current : !sigText.trim()}
-            >
-              Add to Library
-            </button>
           </div>
         )}
 
@@ -710,6 +731,41 @@ export default function App() {
                 <span>Select a stamp above to begin</span>
               </div>
             ) : null
+          )}
+
+          {activeTab === 'create' && (
+            <div className="create-footer">
+              {createMode === 'type' && sigFont && (
+                <div className="cf-selected">
+                  <div
+                    className="cf-preview"
+                    style={{ fontFamily: `'${sigFont}', serif` }}
+                  >
+                    {sigText || 'Signature'}
+                  </div>
+                  <div className="cf-meta">
+                    <span className="cf-font-name">{sigFont}</span>
+                    {!sigText.trim() && (
+                      <span className="cf-hint">Type your name above to preview</span>
+                    )}
+                  </div>
+                </div>
+              )}
+              {createMode === 'draw' && (
+                <div className="cf-draw-hint">
+                  {hasDrawn.current ? 'Ready to add — looking good!' : 'Draw your signature above'}
+                </div>
+              )}
+              <button
+                className="btn-save-sig"
+                onClick={saveSignature}
+                disabled={createMode === 'draw' ? !hasDrawn.current : !sigText.trim()}
+              >
+                {createMode === 'type' && !sigText.trim()
+                  ? 'Type your name to continue'
+                  : 'Add to Library →'}
+              </button>
+            </div>
           )}
         </div>
       </aside>
@@ -731,6 +787,18 @@ export default function App() {
             )}
           </div>
           <div className="topbar-right">
+            <button className="btn-theme" onClick={() => setDark(d => !d)} title={dark ? 'Light mode' : 'Dark mode'}>
+              {dark ? (
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                  <circle cx="7.5" cy="7.5" r="3" stroke="currentColor" strokeWidth="1.3"/>
+                  <path d="M7.5 1v1.5M7.5 12.5V14M1 7.5h1.5M12.5 7.5H14M3.2 3.2l1.1 1.1M10.7 10.7l1.1 1.1M10.7 3.2l-1.1 1.1M3.2 10.7l1.1 1.1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+                </svg>
+              ) : (
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                  <path d="M13 9.5A6 6 0 015.5 2a6 6 0 000 11 6 6 0 007.5-3.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
+                </svg>
+              )}
+            </button>
             <button className="btn-secondary" onClick={() => docInputRef.current?.click()}>
               {pageRendered ? 'Change Document' : 'Upload Document'}
             </button>
