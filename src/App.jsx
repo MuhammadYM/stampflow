@@ -153,7 +153,6 @@ export default function App() {
       renderTaskRef.current = null
       setCanvasSize({ w: scaledVP.width, h: scaledVP.height })
       setPageRendered(true)
-      setPlacedStamps([])
     } catch (e) {
       if (e?.name !== 'RenderingCancelledException') throw e
     }
@@ -175,7 +174,7 @@ export default function App() {
     if (!file || !file.name.toLowerCase().endsWith('.pdf')) return
     setPdfFileName(file.name)
     const reader = new FileReader()
-    reader.onload = ev => { setPdfBuffer(ev.target.result); renderPDF(ev.target.result) }
+    reader.onload = ev => { setPlacedStamps([]); setPdfBuffer(ev.target.result); renderPDF(ev.target.result) }
     reader.readAsArrayBuffer(file)
   }, [renderPDF])
 
