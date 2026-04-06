@@ -75,6 +75,7 @@ function initCanvas(canvas) {
 export default function App() {
   // Theme
   const [dark, setDark] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
   }, [dark])
@@ -445,7 +446,9 @@ export default function App() {
 
   return (
     <div className="app">
-      <aside className="sidebar">
+      {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
+      <aside className={`sidebar${sidebarOpen ? ' open' : ''}`}>
+        <div className="sidebar-drag-handle" onClick={() => setSidebarOpen(false)} />
         <div className="brand">
           <div className="brand-mark">
             <img src="/logo.svg" alt="StampFlow" width="32" height="38" />
@@ -787,6 +790,14 @@ export default function App() {
             )}
           </div>
           <div className="topbar-right">
+            <button className="btn-theme mobile-toggle" onClick={() => setSidebarOpen(o => !o)} title="Stamps">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+                <rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+                <rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+                <rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+              </svg>
+            </button>
             <button className="btn-theme" onClick={() => setDark(d => !d)} title={dark ? 'Light mode' : 'Dark mode'}>
               {dark ? (
                 <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
@@ -800,7 +811,11 @@ export default function App() {
               )}
             </button>
             <button className="btn-secondary" onClick={() => docInputRef.current?.click()}>
-              {pageRendered ? 'Change Document' : 'Upload Document'}
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <rect x="1.5" y="1" width="9" height="10" rx="1.5" stroke="currentColor" strokeWidth="1"/>
+                <path d="M3.5 4.5h5M3.5 6.5h5M3.5 8.5h3" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
+              </svg>
+              <span className="btn-label">{pageRendered ? 'Change Document' : 'Upload Document'}</span>
             </button>
             <input ref={docInputRef} type="file" accept=".pdf" onChange={handleDocUpload} hidden />
             {pageRendered && placedStamps.length > 0 && (
@@ -809,7 +824,7 @@ export default function App() {
                   <path d="M7 1v8M4 6l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                   <path d="M1 10v1.5A1.5 1.5 0 002.5 13h9A1.5 1.5 0 0013 11.5V10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                 </svg>
-                Download PDF
+                <span className="btn-label">Download PDF</span>
               </button>
             )}
           </div>
