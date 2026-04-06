@@ -119,6 +119,7 @@ export default function App() {
   const lastPoint = useRef(null)
   const hasDrawn = useRef(false)
   const fontFileRef = useRef(null)
+  const renderTaskRef = useRef(null)
 
   useEffect(() => {
     try { localStorage.setItem('sf_stamps', JSON.stringify(stamps)) } catch {}
@@ -127,6 +128,10 @@ export default function App() {
   // ── PDF rendering ─────────────────────────────────────────
 
   const renderPDF = useCallback(async (buffer) => {
+    if (renderTaskRef.current) {
+      renderTaskRef.current.cancel()
+      renderTaskRef.current = null
+    }
     const pdf = await pdfjsLib.getDocument({ data: buffer.slice(0) }).promise
     const page = await pdf.getPage(1)
     const viewport = page.getViewport({ scale: 1 })
@@ -137,10 +142,29 @@ export default function App() {
     const canvas = canvasRef.current
     canvas.width = scaledVP.width
     canvas.height = scaledVP.height
-    await page.render({ canvasContext: canvas.getContext('2d'), viewport: scaledVP }).promise
-    setPageRendered(true)
-    setPlacedStamps([])
+    const task = page.render({ canvasContext: canvas.getContext('2d'), viewport: scaledVP })
+    renderTaskRef.current = task
+    try {
+      await task.promise
+      renderTaskRef.current = null
+      setPageRendered(true)
+      setPlacedStamps([])
+    } catch (e) {
+      if (e?.name !== 'RenderingCancelledException') throw e
+    }
   }, [])
+
+  // ── Re-render PDF on container resize (handles mobile layout shifts) ──
+  useEffect(() => {
+    if (!docAreaRef.current || !pdfBuffer) return
+    let timer
+    const ro = new ResizeObserver(() => {
+      clearTimeout(timer)
+      timer = setTimeout(() => renderPDF(pdfBuffer), 120)
+    })
+    ro.observe(docAreaRef.current)
+    return () => { ro.disconnect(); clearTimeout(timer) }
+  }, [pdfBuffer, renderPDF])
 
   const loadFile = useCallback((file) => {
     if (!file || !file.name.toLowerCase().endsWith('.pdf')) return

@@ -1082,6 +1082,8 @@ canvas { display: block; }
 
   .doc-area { padding: 16px 10px; }
 
+  .placed-count { display: none; }
+
   .drop-zone { padding: 40px 20px; }
 
   .font-list { max-height: 200px; }
