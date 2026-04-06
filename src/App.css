@@ -323,10 +323,17 @@ body {
   font-family: 'DM Mono', monospace;
   font-size: 11px;
   color: var(--text-2);
-  white-space: nowrap;
+  max-width: 300px;
+  min-width: 0;
+}
+
+.file-chip-icon { flex-shrink: 0; }
+
+.file-chip-name {
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 300px;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .placed-count {
@@ -1039,6 +1046,8 @@ canvas { display: block; }
 }
 
 .mobile-toggle { display: none; }
+.topbar-logo { display: none; }
+.mobile-count-bar { display: none; }
 
 @media (max-width: 640px) {
   .app { overflow: visible; }
@@ -1067,12 +1076,24 @@ canvas { display: block; }
   .sidebar-overlay { display: block; }
 
   .mobile-toggle { display: flex; }
+  .topbar-logo { display: block; flex-shrink: 0; }
 
-  .topbar { padding: 0 12px; height: 52px; gap: 8px; }
+  .mobile-count-bar {
+    display: flex;
+    justify-content: flex-end;
+    padding: 5px 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
 
-  .topbar-left { gap: 8px; }
+  .topbar { padding: 0 12px; height: 52px; gap: 8px; justify-content: flex-start; }
 
-  .file-chip { max-width: 130px; font-size: 10px; padding: 4px 8px; }
+  .topbar-right { margin-left: auto; }
+
+  .file-chip { max-width: 140px; }
+
+  .placed-count-topbar { display: none; }
 
   .btn-label { display: none; }
 
@@ -1082,7 +1103,6 @@ canvas { display: block; }
 
   .doc-area { padding: 16px 10px; }
 
-  .placed-count { display: none; }
 
   .drop-zone { padding: 40px 20px; }
 
