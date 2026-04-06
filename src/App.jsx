@@ -120,6 +120,7 @@ export default function App() {
   const hasDrawn = useRef(false)
   const fontFileRef = useRef(null)
   const renderTaskRef = useRef(null)
+  const renderGenRef = useRef(0)
 
   useEffect(() => {
     try { localStorage.setItem('sf_stamps', JSON.stringify(stamps)) } catch {}
@@ -128,17 +129,19 @@ export default function App() {
   // ── PDF rendering ─────────────────────────────────────────
 
   const renderPDF = useCallback(async (buffer) => {
+    const gen = ++renderGenRef.current
     if (renderTaskRef.current) {
       renderTaskRef.current.cancel()
       renderTaskRef.current = null
     }
     const pdf = await pdfjsLib.getDocument({ data: buffer.slice(0) }).promise
+    if (gen !== renderGenRef.current) return
     const page = await pdf.getPage(1)
+    if (gen !== renderGenRef.current) return
     const viewport = page.getViewport({ scale: 1 })
     const containerW = (docAreaRef.current?.clientWidth || 800) - 64
     const s = Math.min(containerW, 860) / viewport.width
     const scaledVP = page.getViewport({ scale: s })
-    setCanvasSize({ w: scaledVP.width, h: scaledVP.height })
     const canvas = canvasRef.current
     canvas.width = scaledVP.width
     canvas.height = scaledVP.height
@@ -146,9 +149,10 @@ export default function App() {
     renderTaskRef.current = task
     try {
       await task.promise
+      if (gen !== renderGenRef.current) return
       renderTaskRef.current = null
+      setCanvasSize({ w: scaledVP.width, h: scaledVP.height })
       setPageRendered(true)
-      setPlacedStamps([])
     } catch (e) {
       if (e?.name !== 'RenderingCancelledException') throw e
     }
@@ -170,7 +174,7 @@ export default function App() {
     if (!file || !file.name.toLowerCase().endsWith('.pdf')) return
     setPdfFileName(file.name)
     const reader = new FileReader()
-    reader.onload = ev => { setPdfBuffer(ev.target.result); renderPDF(ev.target.result) }
+    reader.onload = ev => { setPlacedStamps([]); setPdfBuffer(ev.target.result); renderPDF(ev.target.result) }
     reader.readAsArrayBuffer(file)
   }, [renderPDF])
 
@@ -799,18 +803,19 @@ export default function App() {
 
       <main className="main">
         <header className="topbar">
+          <img className="topbar-logo" src="/logo.svg" alt="StampFlow" width="22" height="26" />
           <div className="topbar-left">
             {pdfFileName && (
               <div className="file-chip">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <svg className="file-chip-icon" width="12" height="12" viewBox="0 0 12 12" fill="none">
                   <rect x="1.5" y="1" width="9" height="10" rx="1.5" stroke="currentColor" strokeWidth="1"/>
                   <path d="M3.5 4.5h5M3.5 6.5h5M3.5 8.5h3" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
                 </svg>
-                {pdfFileName}
+                <span className="file-chip-name">{pdfFileName}</span>
               </div>
             )}
             {pageRendered && placedStamps.length > 0 && (
-              <span className="placed-count">{placedStamps.length} stamp{placedStamps.length !== 1 ? 's' : ''} placed</span>
+              <span className="placed-count placed-count-topbar">{placedStamps.length} stamp{placedStamps.length !== 1 ? 's' : ''} placed</span>
             )}
           </div>
           <div className="topbar-right">
@@ -853,6 +858,11 @@ export default function App() {
             )}
           </div>
         </header>
+        {pageRendered && placedStamps.length > 0 && (
+          <div className="mobile-count-bar">
+            <span className="placed-count">{placedStamps.length} stamp{placedStamps.length !== 1 ? 's' : ''} placed</span>
+          </div>
+        )}
 
         <div
           ref={docAreaRef}
