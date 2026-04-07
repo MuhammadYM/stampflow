@@ -72,6 +72,13 @@ function initCanvas(canvas) {
   ctx.fillRect(0, 0, canvas.width, canvas.height)
 }
 
+function clientCoords(e) {
+  const src = (e.touches && e.touches.length > 0) ? e.touches[0]
+            : (e.changedTouches && e.changedTouches.length > 0) ? e.changedTouches[0]
+            : e
+  return { clientX: src.clientX, clientY: src.clientY }
+}
+
 export default function App() {
   // Theme
   const [dark, setDark] = useState(false)
@@ -141,17 +148,22 @@ export default function App() {
     const viewport = page.getViewport({ scale: 1 })
     const containerW = (docAreaRef.current?.clientWidth || 800) - 64
     const s = Math.min(containerW, 860) / viewport.width
-    const scaledVP = page.getViewport({ scale: s })
+    const dpr = window.devicePixelRatio || 1
+    const scaledVP = page.getViewport({ scale: s * dpr })
     const canvas = canvasRef.current
     canvas.width = scaledVP.width
     canvas.height = scaledVP.height
+    const cssW = Math.round(scaledVP.width / dpr)
+    const cssH = Math.round(scaledVP.height / dpr)
+    canvas.style.width = cssW + 'px'
+    canvas.style.height = cssH + 'px'
     const task = page.render({ canvasContext: canvas.getContext('2d'), viewport: scaledVP })
     renderTaskRef.current = task
     try {
       await task.promise
       if (gen !== renderGenRef.current) return
       renderTaskRef.current = null
-      setCanvasSize({ w: scaledVP.width, h: scaledVP.height })
+      setCanvasSize({ w: cssW, h: cssH })
       setPageRendered(true)
     } catch (e) {
       if (e?.name !== 'RenderingCancelledException') throw e
@@ -206,9 +218,10 @@ export default function App() {
 
   const handleOverlayMouseDown = useCallback((e) => {
     if (!selectedStamp || !pageRendered) return
+    const { clientX, clientY } = clientCoords(e)
     const rect = overlayRef.current.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
+    const x = clientX - rect.left
+    const y = clientY - rect.top
     const w = canvasSize.w * STAMP_DEFAULT_RATIO
     const h = w / selectedStamp.aspectRatio
     const inst = { id: `i_${Date.now()}`, stampId: selectedStamp.id, x: x - w / 2, y: y - h / 2, w, h }
@@ -219,23 +232,26 @@ export default function App() {
 
   const startMove = useCallback((e, inst) => {
     e.stopPropagation()
+    const { clientX, clientY } = clientCoords(e)
     const rect = overlayRef.current.getBoundingClientRect()
-    setInteraction({ type: 'move', instanceId: inst.id, startX: e.clientX - rect.left, startY: e.clientY - rect.top, origX: inst.x, origY: inst.y })
+    setInteraction({ type: 'move', instanceId: inst.id, startX: clientX - rect.left, startY: clientY - rect.top, origX: inst.x, origY: inst.y })
     e.preventDefault()
   }, [])
 
   const startResize = useCallback((e, inst) => {
     e.stopPropagation()
+    const { clientX, clientY } = clientCoords(e)
     const rect = overlayRef.current.getBoundingClientRect()
-    setInteraction({ type: 'resize', instanceId: inst.id, startX: e.clientX - rect.left, startY: e.clientY - rect.top, origW: inst.w, origH: inst.h, ar: inst.w / inst.h })
+    setInteraction({ type: 'resize', instanceId: inst.id, startX: clientX - rect.left, startY: clientY - rect.top, origW: inst.w, origH: inst.h, ar: inst.w / inst.h })
     e.preventDefault()
   }, [])
 
   const handleMouseMove = useCallback((e) => {
     if (!interaction || !overlayRef.current) return
+    const { clientX, clientY } = clientCoords(e)
     const rect = overlayRef.current.getBoundingClientRect()
-    const dx = (e.clientX - rect.left) - interaction.startX
-    const dy = (e.clientY - rect.top) - interaction.startY
+    const dx = (clientX - rect.left) - interaction.startX
+    const dy = (clientY - rect.top) - interaction.startY
     if (interaction.type === 'move') {
       setPlacedStamps(prev => prev.map(s =>
         s.id === interaction.instanceId ? { ...s, x: interaction.origX + dx, y: interaction.origY + dy } : s
@@ -251,13 +267,20 @@ export default function App() {
   const handleMouseUp = useCallback(() => setInteraction(null), [])
 
   useEffect(() => {
-    if (interaction) {
-      window.addEventListener('mousemove', handleMouseMove)
-      window.addEventListener('mouseup', handleMouseUp)
-      return () => {
-        window.removeEventListener('mousemove', handleMouseMove)
-        window.removeEventListener('mouseup', handleMouseUp)
-      }
+    if (!interaction) return
+    function onMove(e) {
+      if (e.touches) e.preventDefault()
+      handleMouseMove(e)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', handleMouseUp)
+    window.addEventListener('touchmove', onMove, { passive: false })
+    window.addEventListener('touchend', handleMouseUp)
+    return () => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+      window.removeEventListener('touchmove', onMove)
+      window.removeEventListener('touchend', handleMouseUp)
     }
   }, [interaction, handleMouseMove, handleMouseUp])
 
@@ -330,9 +353,10 @@ export default function App() {
   function getSigPos(e) {
     const canvas = sigCanvasRef.current
     const rect = canvas.getBoundingClientRect()
+    const { clientX, clientY } = clientCoords(e)
     return {
-      x: (e.clientX - rect.left) * (canvas.width / rect.width),
-      y: (e.clientY - rect.top) * (canvas.height / rect.height),
+      x: (clientX - rect.left) * (canvas.width / rect.width),
+      y: (clientY - rect.top) * (canvas.height / rect.height),
     }
   }
 
@@ -607,6 +631,9 @@ export default function App() {
                 onMouseMove={handleSigMouseMove}
                 onMouseUp={handleSigMouseUp}
                 onMouseLeave={handleSigMouseUp}
+                onTouchStart={e => { e.preventDefault(); handleSigMouseDown(e) }}
+                onTouchMove={e => { e.preventDefault(); handleSigMouseMove(e) }}
+                onTouchEnd={handleSigMouseUp}
               />
               {createMode === 'draw' && !hasDrawn.current && (
                 <p className="sig-hint">Draw your signature above</p>
@@ -895,6 +922,7 @@ export default function App() {
                 className={`overlay${selectedStamp ? ' placing' : ''}`}
                 style={{ width: canvasSize.w, height: canvasSize.h }}
                 onMouseDown={handleOverlayMouseDown}
+                onTouchStart={e => { if (selectedStamp && pageRendered) { e.preventDefault(); handleOverlayMouseDown(e) } }}
               >
                 {placedStamps.map(inst => {
                   const stamp = stamps.find(s => s.id === inst.stampId)
@@ -905,12 +933,21 @@ export default function App() {
                       className="placed"
                       style={{ left: inst.x, top: inst.y, width: inst.w, height: inst.h }}
                       onMouseDown={e => startMove(e, inst)}
+                      onTouchStart={e => { e.stopPropagation(); e.preventDefault(); startMove(e, inst) }}
                     >
                       <img src={stamp.dataUrl} alt="" draggable={false} />
-                      <button className="placed-remove" onMouseDown={e => removeInstance(e, inst.id)}>
+                      <button
+                        className="placed-remove"
+                        onMouseDown={e => removeInstance(e, inst.id)}
+                        onTouchStart={e => { e.stopPropagation(); e.preventDefault(); removeInstance(e, inst.id) }}
+                      >
                         <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 1l6 6M7 1L1 7" stroke="white" strokeWidth="1.5" strokeLinecap="round"/></svg>
                       </button>
-                      <div className="placed-resize" onMouseDown={e => startResize(e, inst)} />
+                      <div
+                        className="placed-resize"
+                        onMouseDown={e => startResize(e, inst)}
+                        onTouchStart={e => { e.stopPropagation(); e.preventDefault(); startResize(e, inst) }}
+                      />
                     </div>
                   )
                 })}
