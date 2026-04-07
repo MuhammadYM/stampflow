@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import * as pdfjsLib from 'pdfjs-dist'
 import { PDFDocument } from 'pdf-lib'
 import { FONTS, CATEGORIES } from './fonts.js'
+import { track } from './analytics.js'
 import './App.css'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
@@ -185,6 +186,7 @@ export default function App() {
   const loadFile = useCallback((file) => {
     if (!file || !file.name.toLowerCase().endsWith('.pdf')) return
     setPdfFileName(file.name)
+    track('pdf_uploaded', { file_size_kb: Math.round(file.size / 1024) })
     const reader = new FileReader()
     reader.onload = ev => { setPlacedStamps([]); setPdfBuffer(ev.target.result); renderPDF(ev.target.result) }
     reader.readAsArrayBuffer(file)
@@ -196,6 +198,7 @@ export default function App() {
   const handleStampUpload = async (e) => {
     const file = e.target.files[0]
     if (!file) return
+    track('stamp_image_uploaded')
     const reader = new FileReader()
     reader.onload = async (ev) => {
       const { dataUrl, aspectRatio } = await processStampImage(ev.target.result)
@@ -226,6 +229,7 @@ export default function App() {
     const h = w / selectedStamp.aspectRatio
     const inst = { id: `i_${Date.now()}`, stampId: selectedStamp.id, x: x - w / 2, y: y - h / 2, w, h }
     setPlacedStamps(prev => [...prev, inst])
+    track('stamp_placed')
     setInteraction({ type: 'move', instanceId: inst.id, startX: x, startY: y, origX: inst.x, origY: inst.y })
     e.preventDefault()
   }, [selectedStamp, pageRendered, canvasSize])
@@ -290,6 +294,7 @@ export default function App() {
 
   const handleDownload = async () => {
     if (!pdfBuffer || placedStamps.length === 0) return
+    track('pdf_downloaded', { stamp_count: placedStamps.length })
     const pdfDoc = await PDFDocument.load(pdfBuffer)
     const page = pdfDoc.getPages()[0]
     const { width: pW, height: pH } = page.getSize()
@@ -409,8 +414,10 @@ export default function App() {
       document.fonts.add(face)
       setCustomFonts(prev => prev.find(f => f.name === name) ? prev : [...prev, { name }])
       setSigFont(name)
+      track('font_file_uploaded', { font_name: name })
     } catch {
       setFontUrlError('Could not load font file.')
+      track('font_file_upload_failed', { font_name: name })
     }
   }
 
@@ -471,8 +478,10 @@ export default function App() {
       setCustomFonts(prev => [...prev.filter(f => f.name !== familyName), { name: familyName }])
       setSigFont(familyName)
       setFontUrlInput('')
+      track('font_url_added', { font_name: familyName })
     } catch {
       setFontUrlError(`"${familyName}" not found on Google Fonts. Check the spelling.`)
+      track('font_url_failed', { font_name: familyName })
     }
   }
 
@@ -489,6 +498,7 @@ export default function App() {
     setStamps(prev => [...prev, stamp])
     setSelectedStamp(stamp)
     setActiveTab('library')
+    track('signature_saved', { mode: createMode, ...(createMode === 'type' ? { font: sigFont } : {}) })
     // Reset
     setSigText('')
     hasDrawn.current = false
@@ -515,13 +525,13 @@ export default function App() {
         <div className="sidebar-tabs">
           <button
             className={`s-tab ${activeTab === 'library' ? 'active' : ''}`}
-            onClick={() => setActiveTab('library')}
+            onClick={() => { setActiveTab('library'); track('tab_switched', { tab: 'library' }) }}
           >
             Library
           </button>
           <button
             className={`s-tab ${activeTab === 'create' ? 'active' : ''}`}
-            onClick={() => setActiveTab('create')}
+            onClick={() => { setActiveTab('create'); track('tab_switched', { tab: 'create' }) }}
           >
             Create Signature
           </button>
@@ -589,7 +599,7 @@ export default function App() {
             <div className="mode-toggle">
               <button
                 className={`mode-btn ${createMode === 'draw' ? 'active' : ''}`}
-                onClick={() => setCreateMode('draw')}
+                onClick={() => { setCreateMode('draw'); track('signature_mode_changed', { mode: 'draw' }) }}
               >
                 <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
                   <path d="M2 11L4.5 10 10.5 4 9 2.5 3 8.5 2 11Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
@@ -598,7 +608,7 @@ export default function App() {
               </button>
               <button
                 className={`mode-btn ${createMode === 'type' ? 'active' : ''}`}
-                onClick={() => setCreateMode('type')}
+                onClick={() => { setCreateMode('type'); track('signature_mode_changed', { mode: 'type' }) }}
               >
                 <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
                   <path d="M2 3h9M6.5 3v7M4 10h5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
@@ -854,7 +864,7 @@ export default function App() {
                 <rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/>
               </svg>
             </button>
-            <button className="btn-theme" onClick={() => setDark(d => !d)} title={dark ? 'Light mode' : 'Dark mode'}>
+            <button className="btn-theme" onClick={() => { setDark(d => { track('theme_toggled', { theme: d ? 'light' : 'dark' }); return !d }) }} title={dark ? 'Light mode' : 'Dark mode'}>
               {dark ? (
                 <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
                   <circle cx="7.5" cy="7.5" r="3" stroke="currentColor" strokeWidth="1.3"/>
