@@ -103,6 +103,7 @@ export default function App() {
 
   // Sidebar tab state
   const [activeTab, setActiveTab] = useState('library') // 'library' | 'create'
+  const [showSigTip, setShowSigTip] = useState(() => !localStorage.getItem('sf_sig_tip_seen'))
 
   // Signature creator state
   const [createMode, setCreateMode] = useState('draw') // 'draw' | 'type'
@@ -860,14 +861,29 @@ export default function App() {
             )}
           </div>
           <div className="topbar-right">
-            <button className="btn-theme mobile-toggle" onClick={() => setSidebarOpen(o => !o)} title="Stamps">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/>
-                <rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/>
-                <rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/>
-                <rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/>
-              </svg>
-            </button>
+            <div className="sig-toggle-wrap">
+              <button
+                className="btn-theme mobile-toggle"
+                onClick={() => {
+                  setSidebarOpen(o => !o)
+                  if (showSigTip) { setShowSigTip(false); localStorage.setItem('sf_sig_tip_seen', '1') }
+                }}
+                title="Signatures"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+                  <rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+                  <rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+                  <rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+                </svg>
+              </button>
+              {showSigTip && (
+                <div className="sig-tip" onClick={() => { setShowSigTip(false); localStorage.setItem('sf_sig_tip_seen', '1') }}>
+                  <div className="sig-tip-arrow" />
+                  Tap here to add signatures to your document
+                </div>
+              )}
+            </div>
             <button className="btn-theme" onClick={() => { setDark(d => { track('theme_toggled', { theme: d ? 'light' : 'dark' }); return !d }) }} title={dark ? 'Light mode' : 'Dark mode'}>
               {dark ? (
                 <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
