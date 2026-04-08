@@ -82,10 +82,11 @@ function clientCoords(e) {
 
 export default function App() {
   // Theme
-  const [dark, setDark] = useState(false)
+  const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
+    localStorage.setItem('theme', dark ? 'dark' : 'light')
   }, [dark])
 
   // Stamps & document state
