@@ -229,6 +229,7 @@ export default function App() {
     const h = w / selectedStamp.aspectRatio
     const inst = { id: `i_${Date.now()}`, stampId: selectedStamp.id, x: x - w / 2, y: y - h / 2, w, h }
     setPlacedStamps(prev => [...prev, inst])
+    setSelectedStamp(null)
     track('stamp_placed')
     setInteraction({ type: 'move', instanceId: inst.id, startX: x, startY: y, origX: inst.x, origY: inst.y })
     e.preventDefault()
@@ -932,7 +933,7 @@ export default function App() {
                 className={`overlay${selectedStamp ? ' placing' : ''}`}
                 style={{ width: canvasSize.w, height: canvasSize.h }}
                 onMouseDown={handleOverlayMouseDown}
-                onTouchStart={e => { if (selectedStamp && pageRendered) { e.preventDefault(); handleOverlayMouseDown(e) } }}
+                onTouchStart={e => { if (selectedStamp && pageRendered && e.target === overlayRef.current) { e.preventDefault(); handleOverlayMouseDown(e) } }}
               >
                 {placedStamps.map(inst => {
                   const stamp = stamps.find(s => s.id === inst.stampId)
