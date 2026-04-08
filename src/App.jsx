@@ -384,9 +384,11 @@ export default function App() {
     const a = document.createElement('a')
     a.href = url
     a.download = pdfFileName.replace(/\.pdf$/i, '_stamped.pdf')
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+    if (isIOS) a.target = '_blank'
+    fireConfetti()
     a.click()
     URL.revokeObjectURL(url)
-    fireConfetti()
   }
 
   // ── Signature creator ─────────────────────────────────────
