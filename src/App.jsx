@@ -126,6 +126,7 @@ export default function App() {
   const sigCanvasRef = useRef(null)
   const lastPoint = useRef(null)
   const hasDrawn = useRef(false)
+  const sigCanvasRect = useRef(null)
   const fontFileRef = useRef(null)
   const renderTaskRef = useRef(null)
   const renderGenRef = useRef(0)
@@ -358,7 +359,7 @@ export default function App() {
   // Drawing handlers
   function getSigPos(e) {
     const canvas = sigCanvasRef.current
-    const rect = canvas.getBoundingClientRect()
+    const rect = sigCanvasRect.current || canvas.getBoundingClientRect()
     const { clientX, clientY } = clientCoords(e)
     return {
       x: (clientX - rect.left) * (canvas.width / rect.width),
@@ -368,6 +369,7 @@ export default function App() {
 
   function handleSigMouseDown(e) {
     if (createMode !== 'draw') return
+    sigCanvasRect.current = sigCanvasRef.current.getBoundingClientRect()
     setIsDrawing(true)
     hasDrawn.current = true
     const { x, y } = getSigPos(e)
@@ -380,7 +382,7 @@ export default function App() {
   }
 
   function handleSigMouseMove(e) {
-    if (!isDrawing || createMode !== 'draw') return
+    if (!isDrawing || createMode !== 'draw' || !lastPoint.current) return
     const { x, y } = getSigPos(e)
     const ctx = sigCanvasRef.current.getContext('2d')
     ctx.beginPath()
@@ -394,7 +396,7 @@ export default function App() {
     lastPoint.current = { x, y }
   }
 
-  function handleSigMouseUp() { setIsDrawing(false) }
+  function handleSigMouseUp() { setIsDrawing(false); sigCanvasRect.current = null; lastPoint.current = null }
 
   function clearSigCanvas() {
     const canvas = sigCanvasRef.current
@@ -645,6 +647,7 @@ export default function App() {
                 onTouchStart={e => { e.preventDefault(); handleSigMouseDown(e) }}
                 onTouchMove={e => { e.preventDefault(); handleSigMouseMove(e) }}
                 onTouchEnd={handleSigMouseUp}
+                onTouchCancel={handleSigMouseUp}
               />
               {createMode === 'draw' && !hasDrawn.current && (
                 <p className="sig-hint">Draw your signature above</p>
