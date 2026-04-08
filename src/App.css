@@ -1050,6 +1050,35 @@ canvas { display: block; }
 .topbar-logo { display: none; }
 .mobile-count-bar { display: none; }
 
+.sig-toggle-wrap { position: relative; }
+
+.sig-tip {
+  display: none;
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 180px;
+  background: var(--gold);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+  padding: 9px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  z-index: 200;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+}
+
+.sig-tip-arrow {
+  position: absolute;
+  top: -6px;
+  right: 10px;
+  width: 12px;
+  height: 6px;
+  background: var(--gold);
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
 @media (max-width: 640px) {
   .sidebar {
     position: fixed;
@@ -1083,6 +1112,7 @@ canvas { display: block; }
 
   .mobile-toggle { display: flex; }
   .topbar-logo { display: block; flex-shrink: 0; }
+  .sig-tip { display: block; }
 
   .mobile-count-bar {
     display: flex;

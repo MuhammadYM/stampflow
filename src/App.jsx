@@ -103,6 +103,7 @@ export default function App() {
 
   // Sidebar tab state
   const [activeTab, setActiveTab] = useState('library') // 'library' | 'create'
+  const [showSigTip, setShowSigTip] = useState(() => !localStorage.getItem('sf_sig_tip_seen'))
 
   // Signature creator state
   const [createMode, setCreateMode] = useState('draw') // 'draw' | 'type'
@@ -126,6 +127,7 @@ export default function App() {
   const sigCanvasRef = useRef(null)
   const lastPoint = useRef(null)
   const hasDrawn = useRef(false)
+  const sigCanvasRect = useRef(null)
   const fontFileRef = useRef(null)
   const renderTaskRef = useRef(null)
   const renderGenRef = useRef(0)
@@ -229,6 +231,7 @@ export default function App() {
     const h = w / selectedStamp.aspectRatio
     const inst = { id: `i_${Date.now()}`, stampId: selectedStamp.id, x: x - w / 2, y: y - h / 2, w, h }
     setPlacedStamps(prev => [...prev, inst])
+    setSelectedStamp(null)
     track('stamp_placed')
     setInteraction({ type: 'move', instanceId: inst.id, startX: x, startY: y, origX: inst.x, origY: inst.y })
     e.preventDefault()
@@ -357,7 +360,7 @@ export default function App() {
   // Drawing handlers
   function getSigPos(e) {
     const canvas = sigCanvasRef.current
-    const rect = canvas.getBoundingClientRect()
+    const rect = sigCanvasRect.current || canvas.getBoundingClientRect()
     const { clientX, clientY } = clientCoords(e)
     return {
       x: (clientX - rect.left) * (canvas.width / rect.width),
@@ -367,6 +370,7 @@ export default function App() {
 
   function handleSigMouseDown(e) {
     if (createMode !== 'draw') return
+    sigCanvasRect.current = sigCanvasRef.current.getBoundingClientRect()
     setIsDrawing(true)
     hasDrawn.current = true
     const { x, y } = getSigPos(e)
@@ -379,7 +383,7 @@ export default function App() {
   }
 
   function handleSigMouseMove(e) {
-    if (!isDrawing || createMode !== 'draw') return
+    if (!isDrawing || createMode !== 'draw' || !lastPoint.current) return
     const { x, y } = getSigPos(e)
     const ctx = sigCanvasRef.current.getContext('2d')
     ctx.beginPath()
@@ -393,7 +397,7 @@ export default function App() {
     lastPoint.current = { x, y }
   }
 
-  function handleSigMouseUp() { setIsDrawing(false) }
+  function handleSigMouseUp() { setIsDrawing(false); sigCanvasRect.current = null; lastPoint.current = null }
 
   function clearSigCanvas() {
     const canvas = sigCanvasRef.current
@@ -644,6 +648,7 @@ export default function App() {
                 onTouchStart={e => { e.preventDefault(); handleSigMouseDown(e) }}
                 onTouchMove={e => { e.preventDefault(); handleSigMouseMove(e) }}
                 onTouchEnd={handleSigMouseUp}
+                onTouchCancel={handleSigMouseUp}
               />
               {createMode === 'draw' && !hasDrawn.current && (
                 <p className="sig-hint">Draw your signature above</p>
@@ -856,14 +861,29 @@ export default function App() {
             )}
           </div>
           <div className="topbar-right">
-            <button className="btn-theme mobile-toggle" onClick={() => setSidebarOpen(o => !o)} title="Stamps">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/>
-                <rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/>
-                <rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/>
-                <rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/>
-              </svg>
-            </button>
+            <div className="sig-toggle-wrap">
+              <button
+                className="btn-theme mobile-toggle"
+                onClick={() => {
+                  setSidebarOpen(o => !o)
+                  if (showSigTip) { setShowSigTip(false); localStorage.setItem('sf_sig_tip_seen', '1') }
+                }}
+                title="Signatures"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+                  <rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+                  <rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+                  <rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+                </svg>
+              </button>
+              {showSigTip && (
+                <div className="sig-tip" onClick={() => { setShowSigTip(false); localStorage.setItem('sf_sig_tip_seen', '1') }}>
+                  <div className="sig-tip-arrow" />
+                  Tap here to add signatures to your document
+                </div>
+              )}
+            </div>
             <button className="btn-theme" onClick={() => { setDark(d => { track('theme_toggled', { theme: d ? 'light' : 'dark' }); return !d }) }} title={dark ? 'Light mode' : 'Dark mode'}>
               {dark ? (
                 <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
@@ -932,7 +952,7 @@ export default function App() {
                 className={`overlay${selectedStamp ? ' placing' : ''}`}
                 style={{ width: canvasSize.w, height: canvasSize.h }}
                 onMouseDown={handleOverlayMouseDown}
-                onTouchStart={e => { if (selectedStamp && pageRendered) { e.preventDefault(); handleOverlayMouseDown(e) } }}
+                onTouchStart={e => { if (selectedStamp && pageRendered && e.target === overlayRef.current) { e.preventDefault(); handleOverlayMouseDown(e) } }}
               >
                 {placedStamps.map(inst => {
                   const stamp = stamps.find(s => s.id === inst.stampId)
