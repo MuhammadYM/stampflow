@@ -296,6 +296,71 @@ export default function App() {
 
   // ── Download ──────────────────────────────────────────────
 
+  const fireConfetti = () => {
+    const colors = ['#1a3fff', '#ffffff', '#6080ff', '#3d5aff', '#c8d4ff']
+    const GRAVITY = 0.07
+    const total = 65
+    const particles = []
+    let spawned = 0
+    let lastSpawn = null
+
+    const spawn = () => {
+      const isStrip = Math.random() > 0.35
+      const w = isStrip ? 5 + Math.random() * 5 : 4 + Math.random() * 4
+      const h = isStrip ? w * (1.6 + Math.random() * 0.8) : w
+      const el = document.createElement('div')
+      el.style.cssText = `position:fixed;top:0;left:0;width:${w}px;height:${h}px;background:${colors[Math.floor(Math.random() * colors.length)]};border-radius:${isStrip ? '1px' : '50%'};pointer-events:none;z-index:9999;will-change:transform,opacity;`
+      document.body.appendChild(el)
+      particles.push({
+        el, w, h,
+        x: Math.random() * window.innerWidth,
+        y: -h,
+        vx: (Math.random() - 0.5) * 2,
+        vy: 0.8 + Math.random() * 1.5,
+        rot: Math.random() * 360,
+        rotV: (Math.random() - 0.5) * 5,
+        flutter: Math.random() * Math.PI * 2,
+        flutterSpeed: 0.03 + Math.random() * 0.04,
+        flutterAmp: 0.4 + Math.random() * 0.7,
+        maxLife: 260 + Math.random() * 100,
+        life: 0,
+        done: false,
+      })
+      spawned++
+    }
+
+    const tick = (t) => {
+      if (lastSpawn === null) lastSpawn = t
+      if (spawned < total && t - lastSpawn > 25) {
+        spawn(); lastSpawn = t
+      }
+
+      let alive = spawned < total
+      for (const p of particles) {
+        if (p.done) continue
+        p.life++
+        p.vy += GRAVITY
+        p.flutter += p.flutterSpeed
+        p.vx += Math.sin(p.flutter) * p.flutterAmp * 0.08
+        p.vx *= 0.98
+        p.x += p.vx
+        p.y += p.vy
+        p.rot += p.rotV
+        if (p.y > window.innerHeight + 20 || p.life >= p.maxLife) {
+          p.el.remove(); p.done = true; continue
+        }
+        const fadeOut = p.life > p.maxLife * 0.75
+          ? Math.max(0, 1 - (p.life - p.maxLife * 0.75) / (p.maxLife * 0.25))
+          : 1
+        p.el.style.transform = `translate(${p.x - p.w / 2}px,${p.y - p.h / 2}px) rotate(${p.rot}deg)`
+        p.el.style.opacity = fadeOut
+        alive = true
+      }
+      if (alive) requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+  }
+
   const handleDownload = async () => {
     if (!pdfBuffer || placedStamps.length === 0) return
     track('pdf_downloaded', { stamp_count: placedStamps.length })
@@ -321,6 +386,7 @@ export default function App() {
     a.download = pdfFileName.replace(/\.pdf$/i, '_stamped.pdf')
     a.click()
     URL.revokeObjectURL(url)
+    fireConfetti()
   }
 
   // ── Signature creator ─────────────────────────────────────
