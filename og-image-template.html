@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 1200px;
+      height: 630px;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    .container {
+      position: relative;
+      width: 1200px;
+      height: 630px;
+    }
+
+    .bg {
+      position: absolute;
+      inset: 0;
+      background-image: url('./public/og-bg.jpg');
+      background-size: cover;
+      background-position: center;
+    }
+
+    /* Dark overlay — left to right, so text stays readable on the left */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to right,
+        rgba(5, 8, 30, 0.88) 0%,
+        rgba(5, 8, 30, 0.60) 55%,
+        rgba(5, 8, 30, 0.10) 100%
+      );
+    }
+
+    .content {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 64px 72px;
+      gap: 20px;
+    }
+
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo-icon {
+      width: 48px;
+      height: auto;
+    }
+
+    .logo-name {
+      font-size: 28px;
+      font-weight: 600;
+      color: #ffffff;
+      letter-spacing: -0.3px;
+    }
+
+    .tagline {
+      font-size: 52px;
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.1;
+      letter-spacing: -1px;
+      max-width: 560px;
+    }
+
+    .sub {
+      font-size: 22px;
+      color: rgba(255, 255, 255, 0.65);
+      max-width: 480px;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="bg"></div>
+    <div class="overlay"></div>
+    <div class="content">
+      <div class="logo-row">
+        <!-- StampFlow logo -->
+        <svg class="logo-icon" viewBox="0 0 513 614" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path opacity="0.7" d="M124.475 534.669H361.223C377.5 534.669 392.542 525.991 400.681 511.903L453.291 420.838H190.276L124.475 534.669Z" fill="#ffffff"/>
+          <path opacity="0.4" d="M321.852 193.173H58.7266L111.337 102.108C119.476 88.0203 134.517 79.3418 150.795 79.3418L387.543 79.3418L321.852 193.173Z" fill="#ffffff"/>
+          <path opacity="0.4" d="M505.945 329.771C514.084 315.684 514.084 298.327 505.945 284.239L453.335 193.174L387.571 307.005H124.522L190.279 420.836H453.295L453.315 420.802L453.335 420.836L505.945 329.771Z" fill="#ffffff"/>
+          <path d="M190.253 420.836L124.49 307.005L58.7266 420.836L124.49 534.667L190.253 420.836Z" fill="#ffffff"/>
+          <path opacity="0.7" d="M321.85 193.174H58.7335L6.14898 284.24C-1.98563 298.327 -1.98309 315.681 6.15564 329.767L58.778 420.836L124.541 307.005L387.581 307.005L387.597 306.978L321.85 193.174Z" fill="#ffffff"/>
+          <path d="M453.354 193.173L387.59 79.3418L321.827 193.173L387.59 307.004L453.354 193.173Z" fill="#ffffff"/>
+        </svg>
+        <span class="logo-name">StampFlow</span>
+      </div>
+
+      <div class="tagline">Sign with<br>Authority.</div>
+
+      <div class="sub">Make it official. Stamp any PDF<br>in seconds — no account needed.</div>
+    </div>
+  </div>
+</body>
+</html>
